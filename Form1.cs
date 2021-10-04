@@ -10,7 +10,7 @@ namespace JohnConwaysGameOfLife
 
     public partial class Form1 : Form
     {
-        private readonly byte ZOOM = 5;
+        private readonly byte ZOOM = 10;
 
         private const int RND_MAX = 1000000;
         private const float RND_BALANCE = 0.2F; // make more or less TRUE values.

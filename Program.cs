@@ -16,7 +16,12 @@ namespace JohnConwaysGameOfLife
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new Form1());
+
+            // the easier to understand solution?
+            //Application.Run(new Form1());
+
+            // the more efficient solution?
+            Application.Run(new Form2());
         }
     }
 }

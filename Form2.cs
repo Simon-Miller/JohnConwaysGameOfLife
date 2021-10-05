@@ -4,15 +4,18 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
+using System.Runtime.InteropServices;
 using System.Windows.Forms;
+using System.ComponentModel;
 
 namespace JohnConwaysGameOfLife
 {
     // see: https://playgameoflife.com/info
 
-    public partial class Form2 : Form
+    // see https://social.msdn.microsoft.com/Forums/en-US/eb922ed2-1036-41ca-bd15-49daed7b637c/outlookstyle-wheel-mouse-behavior?forum=winforms
+    public partial class Form2 : Form, IMessageFilter
     {
-        private readonly byte ZOOM = 8;
+        private byte ZOOM = 8;
 
         private const int RND_MAX = 1000000;
         private const float RND_BALANCE = 0.2F; // make more or less TRUE values.
@@ -25,8 +28,8 @@ namespace JohnConwaysGameOfLife
         private int maxY;
 
         private readonly Bitmap gameScreen;
-        private readonly int GAME_WIDTH = 120;
-        private readonly int GAME_HEIGHT = 120;
+        private readonly int GAME_WIDTH = 1024;
+        private readonly int GAME_HEIGHT = 768;
 
         private const PixelFormat PIXEL_FORMAT = PixelFormat.Format32bppArgb;
 
@@ -37,6 +40,9 @@ namespace JohnConwaysGameOfLife
         public Form2()
         {
             InitializeComponent();
+
+            this.MouseWheel += Form2_MouseWheel;
+
             this.gameScreen = new Bitmap(GAME_WIDTH, GAME_HEIGHT, PIXEL_FORMAT);
 
             this.maxX = this.GAME_WIDTH - 1;
@@ -46,6 +52,7 @@ namespace JohnConwaysGameOfLife
 
             this.butIterate.Visible = !this.timer1.Enabled;
         }
+
 
         private void setup()
         {
@@ -80,6 +87,9 @@ namespace JohnConwaysGameOfLife
 
         private void Form1_Paint(object sender, PaintEventArgs e)
         {
+
+            // manipulate viewX by some offset?
+
             var cellsToPaint = this.cellsSystem.GetVisibleCells(this.ViewX, this.ViewY, this.ViewX + this.maxX, this.ViewY + this.maxY);
 
             // paint the game.
@@ -135,5 +145,110 @@ namespace JohnConwaysGameOfLife
             this.Invalidate();
             this.Refresh();
         }
+
+        int mouseDragStartX = 0;
+        int mouseDragStartY = 0;
+        int originViewX = 0;
+        int originViewY = 0;
+        bool isMouseDragging = false;
+        int mouseDragX = 0;
+        int mouseDragY = 0;
+
+        private void Form2_MouseDown(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Left)
+            {
+                this.mouseDragStartX = e.X;
+                this.mouseDragStartY = e.Y;
+                this.originViewX = this.ViewX;
+                this.originViewY = this.ViewY;
+            }
+            this.isMouseDragging = true;
+        }
+
+        private void Form2_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (this.isMouseDragging)
+            {
+                this.mouseDragX = e.X;
+                this.mouseDragY = e.Y;
+
+                var travelledX = this.mouseDragX - this.mouseDragStartX; // assumes dragging right
+                var travelledY = this.mouseDragY - this.mouseDragStartY;
+
+                // convert to zoom
+                var travelledZoomX = (travelledX >= 0) ? travelledX / ZOOM : 0 - (travelledX / (0 - ZOOM));
+                var travelledZoomY = (travelledY >= 0) ? travelledY / ZOOM : 0 - (travelledY / (0 - ZOOM));
+
+                // update for painting.
+                this.ViewX = this.originViewX - travelledZoomX;
+                this.ViewY = this.originViewY - travelledZoomY;
+
+                this.Invalidate();
+                this.Refresh();
+            }
+        }
+
+        private void Form2_MouseUp(object sender, MouseEventArgs e)
+        {
+            this.isMouseDragging = false;
+        }
+
+        private void Form2_MouseWheel(object sender, MouseEventArgs e)
+        {
+            // looks like 120 is ONE click of the mouse wheel?
+
+            if(e.Delta != 0)
+            {
+                if(e.Delta > 0)
+                {
+                    var zoomInc = e.Delta / 120;                    
+                    this.ZOOM += (byte)zoomInc;
+
+                    if (this.ZOOM > 200) this.ZOOM = 200;
+                }
+                else
+                {
+                    var zoomInc = e.Delta / -120;
+                    this.ZOOM -= (byte)zoomInc;
+
+                    // deal with byte underflow back to 255 or less.
+                    if (this.ZOOM < 1 || this.ZOOM > 200) this.ZOOM = 1; 
+                }
+
+                this.Invalidate();
+                this.Refresh();
+            }
+
+        }
+
+        #region mouse wheel
+
+        public bool PreFilterMessage(ref Message m)
+        {
+            const int MOUSEWHEEL = 0x20a;
+
+            if (m.Msg == MOUSEWHEEL)
+            {
+                // WM_MOUSEWHEEL, find the control at screen position m.LParam
+                var hWnd = WindowFromPoint(Cursor.Position);
+
+                if (hWnd != IntPtr.Zero && hWnd != m.HWnd && Control.FromHandle(hWnd) != null)
+                {
+                    SendMessage(hWnd, MOUSEWHEEL, m.WParam, m.LParam);
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        // P/Invoke declarations
+        [DllImport("user32.dll")]
+        private static extern IntPtr WindowFromPoint(Point pt);
+        [DllImport("user32.dll")]
+        private static extern IntPtr SendMessage(IntPtr hWnd, int msg, IntPtr wp, IntPtr lp);
+
+        #endregion
     }
 }

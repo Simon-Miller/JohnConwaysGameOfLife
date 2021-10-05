@@ -28,11 +28,11 @@ namespace JohnConwaysGameOfLife.EfficientSolution
         /// <summary>
         /// only call this method on a living cell.  A call to this method returning false should immediately be deleted.
         /// </summary>
-        /// <param name="livingNeightbourCells"></param>
+        /// <param name="livingNeighbourCells"></param>
         /// <returns></returns>
-        public bool DecideIfAlive(List<Cell> livingNeightbourCells)
+        public bool DecideIfAlive(List<Cell> livingNeighbourCells)
         {
-            var livingNeightbours = livingNeightbourCells.Count;
+            var livingNeightbours = livingNeighbourCells.Count;
 
             // rule: Each cell with ONE or NO neighbors dies, as if by solitude.
             if (livingNeightbours <= SOLITUDE_DEATH_COUNT) return false; // death by solitude

@@ -73,6 +73,9 @@ namespace JohnConwaysGameOfLife
             this.Name = "Form2";
             this.Text = "Form2";
             this.Paint += new System.Windows.Forms.PaintEventHandler(this.Form1_Paint);
+            this.MouseDown += new System.Windows.Forms.MouseEventHandler(this.Form2_MouseDown);
+            this.MouseMove += new System.Windows.Forms.MouseEventHandler(this.Form2_MouseMove);
+            this.MouseUp += new System.Windows.Forms.MouseEventHandler(this.Form2_MouseUp);
             this.ResumeLayout(false);
 
         }
